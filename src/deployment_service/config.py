@@ -1,7 +1,7 @@
 """Environment configuration for local and hosted execution."""
 
-import os
 import math
+import os
 from dataclasses import dataclass
 
 from dotenv import load_dotenv
