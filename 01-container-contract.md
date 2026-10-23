@@ -15,6 +15,11 @@ Build and run the image, then inspect all three API routes:
 
 ```bash
 docker compose up --build
+```
+
+Keep Compose running and use another terminal for the requests:
+
+```bash
 curl http://localhost:8000/health
 curl http://localhost:8000/ready
 curl -X POST http://localhost:8000/generate \

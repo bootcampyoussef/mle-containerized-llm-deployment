@@ -2,6 +2,7 @@
 
 import argparse
 import asyncio
+import math
 import statistics
 import time
 
@@ -19,8 +20,14 @@ def positive_int(value: str) -> int:
 async def send(client: httpx.AsyncClient, url: str, prompt: str) -> tuple[int, float]:
     """Send one request and return status plus elapsed milliseconds."""
     started = time.perf_counter()
-    response = await client.post(f"{url.rstrip('/')}/generate", json={"prompt": prompt})
-    return response.status_code, (time.perf_counter() - started) * 1000
+    try:
+        response = await client.post(
+            f"{url.rstrip('/')}/generate", json={"prompt": prompt}
+        )
+        status = response.status_code
+    except httpx.RequestError:
+        status = 0  # A transport failure is still a failed load-test request.
+    return status, (time.perf_counter() - started) * 1000
 
 
 async def run(url: str, requests: int, concurrency: int) -> None:
@@ -36,8 +43,8 @@ async def run(url: str, requests: int, concurrency: int) -> None:
         results = await asyncio.gather(*(bounded(i, client) for i in range(requests)))
     elapsed = time.perf_counter() - started
     latencies = sorted(latency for _, latency in results)
-    p95_index = max(0, int(len(latencies) * 0.95) - 1)
-    errors = sum(status >= 400 for status, _ in results)
+    p95_index = math.ceil(len(latencies) * 0.95) - 1
+    errors = sum(not 200 <= status < 300 for status, _ in results)
     print(f"requests={requests} concurrency={concurrency}")
     print(f"throughput_rps={requests / elapsed:.2f}")
     print(f"mean_latency_ms={statistics.mean(latencies):.2f}")

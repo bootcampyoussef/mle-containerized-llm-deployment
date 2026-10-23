@@ -1,10 +1,12 @@
 """Typed request, usage, and response contracts."""
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class GenerateRequest(BaseModel):
     """Generation parameters accepted by the public endpoint."""
+
+    model_config = ConfigDict(str_strip_whitespace=True)
 
     prompt: str = Field(min_length=1, max_length=8000)
     max_tokens: int = Field(default=200, ge=1, le=2048)

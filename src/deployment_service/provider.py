@@ -18,7 +18,7 @@ class DryProvider:
     """Stable local provider for tests and deployment checks."""
 
     def __init__(self, model: str) -> None:
-        self.model = model
+        self.model = f"dry:{model}"
 
     async def generate(self, request: GenerateRequest) -> ProviderResult:
         words = request.prompt.split()
@@ -44,6 +44,7 @@ class GroqProvider:
             api_key=settings.groq_api_key,
             base_url="https://api.groq.com/openai/v1",
             timeout=settings.request_timeout_seconds,
+            max_retries=0,
         )
 
     async def generate(self, request: GenerateRequest) -> ProviderResult:
@@ -53,6 +54,11 @@ class GroqProvider:
             max_tokens=request.max_tokens,
             temperature=request.temperature,
         )
+        if (
+            not response.choices
+            or not (response.choices[0].message.content or "").strip()
+        ):
+            raise ValueError("Provider returned no answer")
         usage = response.usage
         return ProviderResult(
             text=response.choices[0].message.content or "",

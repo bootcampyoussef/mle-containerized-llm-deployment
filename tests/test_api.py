@@ -31,7 +31,7 @@ def test_health_and_readiness() -> None:
 def test_generate_and_validation() -> None:
     status, body = asyncio.run(post({"prompt": "hello"}))
     assert status == 200
-    assert body["model"] == "openai/gpt-oss-20b"
+    assert body["model"] == "dry:openai/gpt-oss-20b"
     assert asyncio.run(post({"prompt": ""}))[0] == 422
 
 

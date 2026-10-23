@@ -5,6 +5,10 @@ one starter instance, and secrets that must be entered in Render rather than
 committed. It deploys the API container while Groq performs inference through an
 OpenAI-compatible endpoint.
 
+The Starter plan is paid. This teaching API has no authentication or per-client
+rate limit: add access controls before exposing paid generation publicly, and
+remove the service after the exercise to stop instance charges.
+
 ## Practice
 
 Create a Render Blueprint from your repository and verify:

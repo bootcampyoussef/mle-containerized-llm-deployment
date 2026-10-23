@@ -12,8 +12,10 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev --no-install-project
 
 COPY src ./src
+RUN useradd --create-home appuser
+USER appuser
 
 ENV PATH="/app/.venv/bin:$PATH"
 EXPOSE 8000
 
-CMD ["uvicorn", "deployment_service.app:app", "--app-dir", "src", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uv", "run", "--no-sync", "uvicorn", "deployment_service.app:app", "--app-dir", "src", "--host", "0.0.0.0", "--port", "8000"]

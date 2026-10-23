@@ -17,3 +17,13 @@ The second identical request is served from cache and reports zero incremental
 provider cost. Temperature belongs in the cache key because it can change the
 output. A monthly estimate must separate fixed instance hours from variable
 provider usage and state the assumed cache-hit rate.
+
+The cache is process-local, capped at 1,024 entries, and cleared on restart.
+Instances do not share it, and simultaneous misses can still call the provider
+more than once. Returned token counts describe the cached answer; only the
+incremental cost is zero on a hit. In stub mode, token counts are word-count
+estimates, not model tokenizer measurements.
+
+Stub responses identify their model with a `dry:` prefix. Their estimated cost
+is a simulation; default prices of zero mean pricing is not configured, not
+that live inference is free.
