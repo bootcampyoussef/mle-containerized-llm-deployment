@@ -1,7 +1,7 @@
 [project]
 name = "mle-containerized-llm-deployment"
 version = "0.1.0"
-requires-python = ">=3.13"
+requires-python = ">=3.13.17"
 dependencies = [
     "fastapi>=0.161.1",
     "httpx>=0.28.1",
@@ -28,3 +28,8 @@ target-version = "py313"
 
 [tool.rumdl]
 disable = ["MD013"]
+
+[tool.uv]
+required-version = ">=0.13.5"
+# Apply certificate fixes without adding unused runtime packages.
+constraint-dependencies = ["certifi>=2026.10.19", "pip>=26.2.2"]

@@ -81,6 +81,12 @@ Your repository must include:
 
 ## Setup
 
+Use [uv](https://docs.astral.sh/uv/getting-started/installation/) 0.13.5 or newer
+and Python 3.13.17 or newer. Python 3.13.18 is recommended when available.
+
+Rebuild existing Docker images with `--pull --no-cache` after this update
+to refresh their system certificates and dependencies.
+
 > [!NOTE]
 > Throughout these steps, text in angle brackets like `<repo-name>` is a **placeholder**. Replace it, including the `< >` brackets, with your own value. For example, `cd <repo-name>` becomes `cd mle-containerized-llm-deployment`.
 
