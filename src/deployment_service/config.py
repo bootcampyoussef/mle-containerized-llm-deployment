@@ -15,7 +15,20 @@ class Settings:
 
     provider: str = os.getenv("MODEL_PROVIDER", "dry")
     groq_api_key: str = os.getenv("GROQ_API_KEY", "")
-    model: str = os.getenv("GROQ_MODEL", "openai/gpt-oss-20b")
+    mistral_api_key: str = os.getenv("MISTRAL_API_KEY", "")
+    google_api_key: str = os.getenv("GOOGLE_API_KEY", "")
+    openrouter_api_key: str = os.getenv("OPENROUTER_API_KEY", "")
+    model: str = os.getenv(
+        f"{provider.upper()}_MODEL" if provider != "dry" else "GROQ_MODEL",
+        {
+            "google": "gemma-4-26b-a4b-it",
+            "mistral": "ministral-14b-latest",
+            "openrouter": "google/gemma-4-26b-a4b-it:free",
+        }.get(provider, "openai/gpt-oss-20b"),
+    )
+    openrouter_fallback_model: str = os.getenv(
+        "OPENROUTER_FALLBACK_MODEL", "openrouter/free"
+    )
     cache_ttl_seconds: int = int(os.getenv("CACHE_TTL_SECONDS", "300"))
     max_concurrent_requests: int = int(os.getenv("MAX_CONCURRENT_REQUESTS", "4"))
     request_timeout_seconds: float = float(os.getenv("REQUEST_TIMEOUT_SECONDS", "30"))

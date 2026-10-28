@@ -3,8 +3,9 @@
 This repository teaches how to package an asynchronous LLM API in Docker and
 deploy it to [Render](https://render.com/docs) with explicit health checks,
 resource, scaling, caching, and cost decisions. The service runs locally in
-deterministic dry mode and can use [Groq](https://console.groq.com/docs/openai)
-with `openai/gpt-oss-20b` for intentional live inference.
+deterministic dry mode. Intentional live inference uses `init_chat_model` with
+[Groq](https://console.groq.com/docs/openai) as primary, [Mistral](https://docs.mistral.ai/) as alternative, or optional [OpenRouter](https://openrouter.ai/docs).
+OpenRouter defaults to `google/gemma-4-26b-a4b-it:free`, with `openrouter/free` as a server-side backup. Configure both in `.env.example`; free accounts currently share [50 requests/day across free models](https://openrouter.ai/pricing). Responses identify the model actually used.
 
 Please use this repository as a template when starting your deployment project.
 
@@ -61,7 +62,7 @@ flowchart LR
     B --> C["FastAPI container"]
     C --> E["Exact-match cache"]
     E -->|"miss"| D["Concurrency limit"]
-    D --> F["Groq inference"]
+    D --> F["Live provider inference"]
     E -->|"hit"| G["Typed response"]
     F --> G
 ```
@@ -171,7 +172,7 @@ uv run uvicorn deployment_service.app:app --app-dir src --reload
 uv run pytest
 ```
 
-Docker Desktop is required for the container exercise. The default `MODEL_PROVIDER=dry` uses a deterministic stub, not an LLM. Set `MODEL_PROVIDER=groq` only for intentional live calls. Both Render examples use paid resources; deploying them can incur charges.
+Docker Desktop is required for the container exercise. The default `MODEL_PROVIDER=dry` uses a deterministic stub, not an LLM. For intentional live calls, select `MODEL_PROVIDER=groq`, `mistral`, `openrouter` or `google` and set the matching key and model from `.env.example`. For optional direct [Gemma access](https://ai.google.dev/gemma/docs/core/gemma_on_gemini_api) through Google AI Studio, independent of OpenRouter, set `MODEL_PROVIDER=google`, `GOOGLE_API_KEY` and `GOOGLE_MODEL=gemma-4-26b-a4b-it`. Google free [rate limits](https://ai.google.dev/gemini-api/docs/rate-limits) vary by project and model; use only non-sensitive exercise data on the free tier. Both Render examples use paid resources; deploying them can incur charges.
 
 ## Useful References
 

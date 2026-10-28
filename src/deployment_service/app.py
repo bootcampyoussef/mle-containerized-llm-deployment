@@ -3,7 +3,8 @@
 import logging
 
 from fastapi import FastAPI, HTTPException
-from openai import APITimeoutError
+from groq import APITimeoutError
+from httpx import TimeoutException
 
 from deployment_service.config import settings
 from deployment_service.models import GenerateRequest, GenerateResponse
@@ -33,7 +34,7 @@ async def generate(request: GenerateRequest) -> GenerateResponse:
     """Generate text with bounded concurrency and exact-match caching."""
     try:
         return await service.generate(request)
-    except (TimeoutError, APITimeoutError) as exc:
+    except (TimeoutError, APITimeoutError, TimeoutException) as exc:
         raise HTTPException(
             status_code=504, detail="Generation request timed out"
         ) from exc
