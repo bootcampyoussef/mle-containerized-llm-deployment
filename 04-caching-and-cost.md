@@ -13,6 +13,9 @@ Render instance plan.
 
 ## Reference Answer
 
+<details>
+<summary>Show Reference Answer</summary>
+
 The second identical request is served from cache and reports zero incremental
 provider cost. Temperature belongs in the cache key because it can change the
 output. A monthly estimate must separate fixed instance hours from variable
@@ -27,3 +30,18 @@ estimates, not model tokenizer measurements.
 Stub responses identify their model with a `dry:` prefix. Their estimated cost
 is a simulation; default prices of zero mean pricing is not configured, not
 that live inference is free.
+
+</details>
+
+## Check Your Understanding
+
+1. Does a cache hit imply that no tokens were used to create the answer?
+2. Does a zero token-price setting make a live provider free?
+
+<details>
+<summary>Show Reference Answers</summary>
+
+1. No. It avoids a new provider call; the original generation still used tokens.
+2. No. Zero means no price is configured in the estimator, not that billing is disabled.
+
+</details>

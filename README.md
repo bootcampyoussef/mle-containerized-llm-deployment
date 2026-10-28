@@ -23,14 +23,12 @@ By completing this repository, you should be able to:
 
 ## Learning Path
 
-- [01-container-contract.md](01-container-contract.md): Run the container and
-  inspect its health and readiness contract.
-- [02-render-deployment.md](02-render-deployment.md): Deploy the Docker service
-  without committing credentials.
-- [03-scaling-and-failures.md](03-scaling-and-failures.md): Interpret load
-  evidence and diagnose deployment failures.
-- [04-caching-and-cost.md](04-caching-and-cost.md): Connect cache hits, token
-  usage, instance hours, and cost.
+| File / Folder | Description |
+|---|---|
+| [**01 - Container Contract**](01-container-contract.md) | Run the container and inspect health and readiness. |
+| [**02 - Render Deployment**](02-render-deployment.md) | Deploy the Docker service without committing credentials. |
+| [**03 - Scaling and Failures**](03-scaling-and-failures.md) | Interpret load evidence and diagnose deployment failures. |
+| [**04 - Caching and Cost**](04-caching-and-cost.md) | Connect cache hits, token usage, instance hours, and cost. |
 
 ### Additional Folders and Files
 

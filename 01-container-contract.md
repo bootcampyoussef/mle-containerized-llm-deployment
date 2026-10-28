@@ -32,6 +32,24 @@ can no longer reach it through the published port, then restore the command.
 
 ## Reference Answer
 
+<details>
+<summary>Show Reference Answer</summary>
+
 A process bound to container loopback accepts traffic only from inside that
 container. Binding to `0.0.0.0` allows the container network interface to
 receive traffic forwarded through the published port or cloud load balancer.
+
+</details>
+
+## Check Your Understanding
+
+1. Does a successful `/health` response establish that inference works?
+2. Why should a readiness probe avoid a paid model call?
+
+<details>
+<summary>Show Reference Answers</summary>
+
+1. No. It establishes HTTP liveness; inference needs a separate check.
+2. Repeated probes would consume quota and money. This service checks configuration, not upstream availability.
+
+</details>

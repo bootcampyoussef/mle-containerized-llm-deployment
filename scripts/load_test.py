@@ -47,6 +47,8 @@ async def run(url: str, requests: int, concurrency: int) -> None:
     errors = sum(not 200 <= status < 300 for status, _ in results)
     print(f"requests={requests} concurrency={concurrency}")
     print(f"throughput_rps={requests / elapsed:.2f}")
+    print(f"successful_requests={requests - errors}")
+    print(f"successful_throughput_rps={(requests - errors) / elapsed:.2f}")
     print(f"mean_latency_ms={statistics.mean(latencies):.2f}")
     print(f"p95_latency_ms={latencies[p95_index]:.2f}")
     print(f"error_rate={errors / requests:.2%}")

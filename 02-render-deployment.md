@@ -23,6 +23,24 @@ key to `render.yaml` or the repository.
 
 ## Reference Answer
 
+<details>
+<summary>Show Reference Answer</summary>
+
 `GROQ_API_KEY` uses `sync: false`, which makes Render request the value during
 Blueprint creation. `healthCheckPath: /health` lets Render remove an unhealthy
 instance from service without spending tokens on a readiness probe.
+
+</details>
+
+## Check Your Understanding
+
+1. Is a working local container proof of a successful Render deployment?
+2. Does removing the API key stop instance charges?
+
+<details>
+<summary>Show Reference Answers</summary>
+
+1. No. Verify the deployed routes and runtime configuration separately.
+2. No. Delete the paid service after the exercise; instance billing is separate from provider usage.
+
+</details>

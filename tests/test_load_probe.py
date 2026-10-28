@@ -37,6 +37,19 @@ def test_small_sample_p95_uses_the_maximum(monkeypatch, capsys):
     output = capsys.readouterr().out
     assert "p95_latency_ms=100.00" in output
     assert "error_rate=50.00%" in output
+    assert "successful_requests=1" in output
+
+
+def test_outage_does_not_look_like_successful_throughput(monkeypatch, capsys):
+    async def send(*args):
+        return 503, 1.0
+
+    monkeypatch.setattr(probe, "send", send)
+    asyncio.run(probe.run("http://test", requests=2, concurrency=1))
+    output = capsys.readouterr().out
+    assert "successful_requests=0" in output
+    assert "successful_throughput_rps=0.00" in output
+    assert "error_rate=100.00%" in output
 
 
 def test_cache_is_bounded_and_removes_expired_entries(monkeypatch):

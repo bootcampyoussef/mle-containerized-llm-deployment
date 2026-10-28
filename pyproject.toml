@@ -33,6 +33,9 @@ target-version = "py313"
 [tool.rumdl]
 disable = ["MD013"]
 
+[tool.rumdl.MD033]
+allowed-elements = ["details", "summary"]
+
 [tool.uv]
 required-version = ">=0.13.5"
 # Apply certificate fixes without adding unused runtime packages.
