@@ -55,7 +55,7 @@ Work through the repository in this order:
 5. Explain whether one instance or autoscaling is justified by the evidence.
 
 ```mermaid
-flowchart LR
+flowchart TD
     A["Client"] --> B["Render load balancer"]
     B --> C["FastAPI container"]
     C --> E["Exact-match cache"]
