@@ -6,8 +6,10 @@ from pathlib import Path
 from runpy import run_path
 
 import httpx
+import httpx2
 import pytest
 from groq import RateLimitError
+from openai import APIError as OpenAIAPIError
 from openrouter.errors import OpenRouterError
 
 from deployment_service.config import Settings
@@ -16,18 +18,25 @@ from deployment_service.provider import ChatProvider
 
 
 @pytest.mark.parametrize(
-    "provider_name", ["dry", "groq", "mistral", "openrouter", "google"]
+    "provider_name", ["dry", "groq", "mistral", "openrouter", "google", "openai"]
 )
 def test_environment_selects_the_matching_default_and_model_override(
     monkeypatch, provider_name
 ):
     monkeypatch.setenv("PYTHON_DOTENV_DISABLED", "1")
     monkeypatch.setenv("MODEL_PROVIDER", provider_name)
-    for name in ("GROQ_MODEL", "MISTRAL_MODEL", "OPENROUTER_MODEL", "GOOGLE_MODEL"):
+    for name in (
+        "GROQ_MODEL",
+        "MISTRAL_MODEL",
+        "OPENROUTER_MODEL",
+        "GOOGLE_MODEL",
+        "OPENAI_MODEL",
+    ):
         monkeypatch.delenv(name, raising=False)
     path = Path(__file__).parents[1] / "src/deployment_service/config.py"
     expected = {
         "google": "gemma-4-26b-a4b-it",
+        "openai": "gpt-6-luna",
         "mistral": "ministral-14b-latest",
         "openrouter": "google/gemma-4-26b-a4b-it:free",
     }.get(provider_name, "openai/gpt-oss-20b")
@@ -42,15 +51,17 @@ def test_environment_selects_the_matching_default_and_model_override(
 @pytest.mark.parametrize(
     "usage", [None, {"prompt_tokens": 12, "completion_tokens": 7, "total_tokens": 19}]
 )
-@pytest.mark.parametrize("provider_name", ["groq", "mistral", "openrouter"])
+@pytest.mark.parametrize("provider_name", ["groq", "mistral", "openrouter", "openai"])
 def test_native_async_generation_preserves_usage_and_limits(
     monkeypatch, usage, provider_name
 ):
     requests = []
 
+    transport = httpx2 if provider_name == "openai" else httpx
+
     async def respond(client, request, **kwargs):
         requests.append(request)
-        return httpx.Response(
+        return transport.Response(
             200,
             request=request,
             json={
@@ -73,13 +84,14 @@ def test_native_async_generation_preserves_usage_and_limits(
             },
         )
 
-    monkeypatch.setattr(httpx.AsyncClient, "send", respond)
+    monkeypatch.setattr(transport.AsyncClient, "send", respond)
     provider = ChatProvider(
         Settings(
             provider=provider_name,
             groq_api_key="test-only",
             mistral_api_key="test-only",
             openrouter_api_key="test-only",
+            openai_api_key="test-only",
         )
     )
     result = asyncio.run(
@@ -93,13 +105,16 @@ def test_native_async_generation_preserves_usage_and_limits(
     )
     assert result.text == "Approved answer"
     assert result.model == (
-        "test-model" if provider_name == "openrouter" else provider.model
+        "test-model" if provider_name in {"openrouter", "openai"} else provider.model
     )
     assert result.usage.input_tokens == (12 if usage else 0)
     assert result.usage.output_tokens == (7 if usage else 0)
     assert len(requests) == 1
     body = json.loads(requests[0].content)
-    assert body["max_tokens"] == 123
+    token_key = "max_completion_tokens" if provider_name == "openai" else "max_tokens"
+    assert body[token_key] == 123
+    if provider_name == "openai":
+        assert body["reasoning_effort"] == "none"
     assert body["temperature"] == 0.4
     if provider_name == "openrouter":
         assert body["models"] == [body["model"], "openrouter/free"]
@@ -121,12 +136,14 @@ def test_native_async_generation_preserves_usage_and_limits(
         ("stop", "  "),
     ],
 )
-@pytest.mark.parametrize("provider_name", ["groq", "mistral", "openrouter"])
+@pytest.mark.parametrize("provider_name", ["groq", "mistral", "openrouter", "openai"])
 def test_native_async_generation_rejects_unusable_answers(
     monkeypatch, reason, content, provider_name
 ):
+    transport = httpx2 if provider_name == "openai" else httpx
+
     async def respond(client, request, **kwargs):
-        return httpx.Response(
+        return transport.Response(
             200,
             request=request,
             json={
@@ -148,13 +165,14 @@ def test_native_async_generation_rejects_unusable_answers(
             },
         )
 
-    monkeypatch.setattr(httpx.AsyncClient, "send", respond)
+    monkeypatch.setattr(transport.AsyncClient, "send", respond)
     provider = ChatProvider(
         Settings(
             provider=provider_name,
             groq_api_key="test-only",
             mistral_api_key="test-only",
             openrouter_api_key="test-only",
+            openai_api_key="test-only",
         )
     )
     with pytest.raises((ValueError, OpenRouterError)):
@@ -162,29 +180,32 @@ def test_native_async_generation_rejects_unusable_answers(
 
 
 @pytest.mark.parametrize("status", [200, 429])
-@pytest.mark.parametrize("provider_name", ["groq", "mistral", "openrouter"])
+@pytest.mark.parametrize("provider_name", ["groq", "mistral", "openrouter", "openai"])
 def test_native_async_generation_does_not_retry_or_invent_an_answer(
     monkeypatch, status, provider_name
 ):
     calls = []
 
+    transport = httpx2 if provider_name == "openai" else httpx
+
     async def respond(client, request, **kwargs):
         calls.append(request)
-        return httpx.Response(status, request=request, json={"choices": []})
+        return transport.Response(status, request=request, json={"choices": []})
 
-    monkeypatch.setattr(httpx.AsyncClient, "send", respond)
+    monkeypatch.setattr(transport.AsyncClient, "send", respond)
     provider = ChatProvider(
         Settings(
             provider=provider_name,
             groq_api_key="test-only",
             mistral_api_key="test-only",
             openrouter_api_key="test-only",
+            openai_api_key="test-only",
         )
     )
     with pytest.raises(
         (ValueError, OpenRouterError)
         if status == 200
-        else (RateLimitError, httpx.HTTPStatusError, OpenRouterError)
+        else (RateLimitError, OpenAIAPIError, httpx.HTTPStatusError, OpenRouterError)
     ):
         asyncio.run(provider.generate(GenerateRequest(prompt="Question")))
     assert len(calls) == 1

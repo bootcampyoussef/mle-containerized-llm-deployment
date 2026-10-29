@@ -18,10 +18,12 @@ class Settings:
     mistral_api_key: str = os.getenv("MISTRAL_API_KEY", "")
     google_api_key: str = os.getenv("GOOGLE_API_KEY", "")
     openrouter_api_key: str = os.getenv("OPENROUTER_API_KEY", "")
+    openai_api_key: str = os.getenv("OPENAI_API_KEY", "")
     model: str = os.getenv(
         f"{provider.upper()}_MODEL" if provider != "dry" else "GROQ_MODEL",
         {
             "google": "gemma-4-26b-a4b-it",
+            "openai": "gpt-6-luna",
             "mistral": "ministral-14b-latest",
             "openrouter": "google/gemma-4-26b-a4b-it:free",
         }.get(provider, "openai/gpt-oss-20b"),
