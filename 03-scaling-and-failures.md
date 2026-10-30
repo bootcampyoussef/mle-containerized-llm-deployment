@@ -24,7 +24,7 @@ Start the local API in one terminal, then run the load probe against dry mode
 from another:
 
 ```bash
-uv run uvicorn deployment_service.app:app --app-dir src
+MODEL_PROVIDER=dry uv run uvicorn deployment_service.app:app --app-dir src
 ```
 
 ```bash

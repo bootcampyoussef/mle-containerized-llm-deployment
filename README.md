@@ -2,8 +2,8 @@
 
 This repository teaches how to package an asynchronous LLM API in Docker and
 deploy it to [Render](https://render.com/docs) with explicit health checks,
-resource, scaling, caching, and cost decisions. The service runs locally in
-deterministic dry mode. Intentional live inference uses `init_chat_model` with
+resource, scaling, caching, and cost decisions. The service defaults to live
+inference using `init_chat_model` with
 [Groq](https://console.groq.com/docs/openai) as primary, [Mistral](https://docs.mistral.ai/) as alternative, or optional [OpenRouter](https://openrouter.ai/docs).
 OpenRouter defaults to `google/gemma-4-26b-a4b-it:free`, with `openrouter/free` as a server-side backup. Configure both in `.env.example`; free accounts currently share [50 requests/day across free models](https://openrouter.ai/pricing). Responses identify the model actually used.
 
@@ -150,7 +150,7 @@ Python 3.13 is selected by `.python-version`. Install [uv](https://docs.astral.s
 cp .env.example .env
 ```
 
-Keep the defaults for the first local run. Never commit `.env` or real credentials.
+Keep `MODEL_PROVIDER=groq` and fill in `GROQ_API_KEY` for the first local run. Never commit `.env` or real credentials.
 
 ---
 
@@ -170,7 +170,7 @@ uv run uvicorn deployment_service.app:app --app-dir src --reload
 uv run pytest
 ```
 
-Docker Desktop is required for the container exercise. The default `MODEL_PROVIDER=dry` uses a deterministic stub, not an LLM. For intentional live calls, select `MODEL_PROVIDER=groq`, `mistral`, `openrouter`, `google` or `openai` and set the matching key and model from `.env.example`. For optional direct [Gemma access](https://ai.google.dev/gemma/docs/core/gemma_on_gemini_api) through Google AI Studio, independent of OpenRouter, set `MODEL_PROVIDER=google`, `GOOGLE_API_KEY` and `GOOGLE_MODEL=gemma-4-26b-a4b-it`. Google free [rate limits](https://ai.google.dev/gemini-api/docs/rate-limits) vary by project and model; use only non-sensitive exercise data on the free tier. Both Render examples use paid resources; deploying them can incur charges. Set `MODEL_PROVIDER=openai`, `OPENAI_API_KEY` and `OPENAI_MODEL=gpt-6-luna` for direct [OpenAI access](https://developers.openai.com/api/docs/models/gpt-6-luna). API usage is paid; reasoning is disabled to keep the sampling settings compatible.
+Docker Desktop is required for the container exercise. The default `MODEL_PROVIDER=groq` requires `GROQ_API_KEY`. Set `MODEL_PROVIDER=dry` explicitly for the deterministic stub; tests always use this mode without credentials. For another live provider, select `mistral`, `openrouter`, `google` or `openai` and set the matching key and model from `.env.example`. For optional direct [Gemma access](https://ai.google.dev/gemma/docs/core/gemma_on_gemini_api) through Google AI Studio, independent of OpenRouter, set `MODEL_PROVIDER=google`, `GOOGLE_API_KEY` and `GOOGLE_MODEL=gemma-4-26b-a4b-it`. Google free [rate limits](https://ai.google.dev/gemini-api/docs/rate-limits) vary by project and model; use only non-sensitive exercise data on the free tier. Both Render examples use paid resources; deploying them can incur charges. Set `MODEL_PROVIDER=openai`, `OPENAI_API_KEY` and `OPENAI_MODEL=gpt-6-luna` for direct [OpenAI access](https://developers.openai.com/api/docs/models/gpt-6-luna). API usage is paid; reasoning is disabled to keep the sampling settings compatible.
 
 ## Useful References
 

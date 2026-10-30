@@ -13,7 +13,7 @@ load_dotenv()
 class Settings:
     """Runtime settings loaded once when the application starts."""
 
-    provider: str = os.getenv("MODEL_PROVIDER", "dry")
+    provider: str = os.getenv("MODEL_PROVIDER", "groq")
     groq_api_key: str = os.getenv("GROQ_API_KEY", "")
     mistral_api_key: str = os.getenv("MISTRAL_API_KEY", "")
     google_api_key: str = os.getenv("GOOGLE_API_KEY", "")
