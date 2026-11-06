@@ -7,7 +7,8 @@ inference using `init_chat_model` with
 [Groq](https://console.groq.com/docs/openai) as primary, [Mistral](https://docs.mistral.ai/) as alternative, or optional [OpenRouter](https://openrouter.ai/docs).
 OpenRouter defaults to `google/gemma-4-26b-a4b-it:free`, with `openrouter/free` as a server-side backup. Configure both in `.env.example`; free accounts currently share [50 requests/day across free models](https://openrouter.ai/pricing). Responses identify the model actually used.
 
-Please use this repository as a template when starting your deployment project.
+This guided lesson provides the API, container and deployment files. Work
+through the four practice tasks to inspect and adapt them.
 
 ## Learning Objectives
 
@@ -42,7 +43,7 @@ By completing this repository, you should be able to:
 | [**Load probe**](scripts/load_test.py) | Throughput, p95 latency and error rate. |
 | [**Assets**](assets/README.md) | Visual sources and credits. |
 
-## Required Workflow
+## Lesson Workflow
 
 Work through the repository in this order:
 
@@ -65,19 +66,6 @@ flowchart TD
     F --> G
 ```
 
-## Deliverables
-
-Your repository must include:
-
-- a Docker image that exposes a typed LLM API with health and readiness routes;
-- a Render Blueprint with a safe default instance configuration and secrets
-  kept outside version control;
-- a load probe and written interpretation of throughput, p95 latency, and
-  error rate;
-- bounded concurrency, timeout handling, exact-match caching, token usage, and
-  configurable cost estimation; and
-- answers to the four practice tasks in the numbered implementation files.
-
 ## Setup
 
 Use [uv](https://docs.astral.sh/uv/getting-started/installation/) 0.13.5 or newer
@@ -87,64 +75,18 @@ and Python 3.13.17 or a newer 3.13 patch release, as defined in
 Rebuild existing Docker images with `--pull --no-cache` after this update
 to refresh their system certificates and dependencies.
 
-> [!NOTE]
-> Throughout these steps, text in angle brackets like `<repo-name>` is a **placeholder**. Replace it, including the `< >` brackets, with your own value. For example, `cd <repo-name>` becomes `cd mle-containerized-llm-deployment`.
-
-### 1. Create the Repository from the Template
-
-Click **Use this template** on GitHub.
-
-When creating the repository:
-
-- Set yourself as the **Owner**
-- Choose a repository name
-- Disable **Include all branches**
-- Click **Create repository**
-
-> [!IMPORTANT]
-> If you are working in pairs or groups, only **one person** should complete this step.
-
----
-
-### 2. Add Collaborators (Pairs/Groups Only)
-
-If working with teammates:
-
-1. Open the repository on GitHub
-2. Go to **Settings → Collaborators**
-3. Add your teammates as collaborators
-4. Share the repository link with your team
-
-Teammates should accept the invitation before continuing.
-
----
-
-### 3. Clone the Repository
-
-Copy the SSH URL from the **Code** button on GitHub, then run:
+### 1. Clone and Install
 
 ```bash
-git clone <copied-ssh-url>
-```
-
-The copied SSH URL will look like `git@github.com:<your-username>/<repo-name>.git`.
-
----
-
-### 4. Move into the Project Folder and Install Dependencies
-
-The command below installs all dependencies and creates a virtual environment in `.venv/`.
-
-```bash
-cd <repo-name>
+git clone https://github.com/neuefische/mle-containerized-llm-deployment.git
+cd mle-containerized-llm-deployment
 uv sync
 ```
 
-Python 3.13 is selected by `.python-version`. Install [uv](https://docs.astral.sh/uv/getting-started/installation/) first if needed.
+Run the remaining commands from this folder. `uv sync` creates `.venv/` using
+the Python version selected by `.python-version`.
 
----
-
-### 5. Set Up Environment Variables
+### 2. Set Up Environment Variables
 
 ```bash
 cp .env.example .env
@@ -152,9 +94,7 @@ cp .env.example .env
 
 Keep `MODEL_PROVIDER=groq` and fill in `GROQ_API_KEY` for the first local run. Never commit `.env` or real credentials.
 
----
-
-### 6. Open the Repository in VS Code
+### 3. Open the Repository in VS Code
 
 ```bash
 code .

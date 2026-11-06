@@ -7,4 +7,3 @@ repository. Keep the source attribution beside each use in the lesson files.
 
 - `docker-architecture.png` is [Docker architecture](https://commons.wikimedia.org/wiki/File:Docker-architecture.png) from Wikimedia Commons. It is licensed CC BY-SA 4.0 and attributed to dc.
 - `distserve-goodput.png` is Figure 1 from [DistServe: Disaggregating Prefill and Decoding for Goodput-optimized Large Language Model Serving](https://arxiv.org/abs/2401.09670). It is distributed under [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/).
-- `enova-autoscaling.png` is Figure 1 from the scientific paper [ENOVA: Autoscaling towards Cost-effective and Stable Serverless LLM Serving](https://arxiv.org/abs/2407.09486). The figure compares running and pending requests under different request rates.

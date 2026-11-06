@@ -14,10 +14,6 @@ complete replacement. The workspace subscription and the service's `plan`
 
 *Research context: Figure 1 from [DistServe: Disaggregating Prefill and Decoding for Goodput-optimized Large Language Model Serving](https://arxiv.org/abs/2401.09670), licensed [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). The chart shows why a service can cross a latency target before its raw throughput is exhausted. This repository keeps the implementation on one small container; the figure is here to support the capacity discussion, not as an implementation requirement.*
 
-![ENOVA monitoring running and pending requests as load changes](assets/enova-autoscaling.png)
-
-*Source: Figure 1 from [ENOVA: Autoscaling towards Cost-effective and Stable Serverless LLM Serving](https://arxiv.org/abs/2407.09486).*
-
 ## Practice
 
 Start the local API in one terminal, then run the load probe against dry mode
