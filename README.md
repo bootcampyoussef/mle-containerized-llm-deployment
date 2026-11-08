@@ -2,13 +2,10 @@
 
 This repository teaches how to package an asynchronous LLM API in Docker and
 deploy it to [Render](https://render.com/docs) with explicit health checks,
-resource, scaling, caching, and cost decisions. The service defaults to live
-inference using `init_chat_model` with
-[Groq](https://console.groq.com/docs/openai) as primary, [Mistral](https://docs.mistral.ai/) as alternative, or optional [OpenRouter](https://openrouter.ai/docs).
-OpenRouter defaults to `google/gemma-4-26b-a4b-it:free`, with `openrouter/free` as a server-side backup. Configure both in `.env.example`; free accounts currently share [50 requests/day across free models](https://openrouter.ai/pricing). Responses identify the model actually used.
-
-This guided lesson provides the API, container and deployment files. Work
-through the four practice tasks to inspect and adapt them.
+resource, scaling, caching, and cost decisions. The API, Dockerfile, and
+deployment configuration are supplied. Start with the local stub so you can
+observe the service behavior without an API key or cloud account. The hosted
+walkthrough can be followed as a configuration review or an instructor demo.
 
 ## Learning Objectives
 
@@ -27,7 +24,7 @@ By completing this repository, you should be able to:
 | File / Folder | Description |
 |---|---|
 | [**01 - Container Contract**](01-container-contract.md) | Run the container and inspect health and readiness. |
-| [**02 - Render Deployment**](02-render-deployment.md) | Deploy the Docker service without committing credentials. |
+| [**02 - Render Deployment**](02-render-deployment.md) | Read the Blueprint and follow the optional hosted verification. |
 | [**03 - Scaling and Failures**](03-scaling-and-failures.md) | Interpret load evidence and diagnose deployment failures. |
 | [**04 - Caching and Cost**](04-caching-and-cost.md) | Connect cache hits, token usage, instance hours, and cost. |
 
@@ -45,23 +42,20 @@ By completing this repository, you should be able to:
 
 ## Lesson Workflow
 
-Work through the repository in this order:
+**First block (01-02):** Build the image, verify the API from the host, and
+trace how the same container contract maps to a hosted service.
 
-1. Build and run the container, then inspect `/health`, `/ready`, and
-   `/generate`.
-2. Deploy the same image to Render with secrets configured outside the image.
-3. Run the load probe and diagnose cold starts, memory pressure, provider
-   latency, and timeout failures.
-4. Compare repeated requests, cache hits, token usage, and cost estimates.
-5. Explain whether one instance or autoscaling is justified by the evidence.
+**Second block (03-04):** Keep the local container running. Compare a healthy
+run with a controlled outage, inspect a cache hit, and use the evidence to
+decide what you would measure before scaling.
 
 ```mermaid
 flowchart TD
-    A["Client"] --> B["Render load balancer"]
+    A["Client"] --> B["Local published port or Render"]
     B --> C["FastAPI container"]
     C --> E["Exact-match cache"]
     E -->|"miss"| D["Concurrency limit"]
-    D --> F["Live provider inference"]
+    D --> F["Local stub or live provider"]
     E -->|"hit"| G["Typed response"]
     F --> G
 ```
@@ -72,27 +66,29 @@ Use [uv](https://docs.astral.sh/uv/getting-started/installation/) 0.13.5 or newe
 and Python 3.13.17 or a newer 3.13 patch release, as defined in
 [`.python-version`](.python-version).
 
-Rebuild existing Docker images with `--pull --no-cache` after this update
-to refresh their system certificates and dependencies.
+Start Docker Desktop or a compatible Docker Engine with Compose before the
+[container walkthrough](01-container-contract.md). The examples use
+Bash-compatible commands; on Windows, use Git Bash.
 
 ### 1. Clone and Install
 
 ```bash
 git clone https://github.com/neuefische/mle-containerized-llm-deployment.git
 cd mle-containerized-llm-deployment
-uv sync
+uv sync --locked
 ```
 
-Run the remaining commands from this folder. `uv sync` creates `.venv/` using
-the Python version selected by `.python-version`.
+Run the remaining commands from this folder. `uv sync --locked` creates
+`.venv/` using the Python version selected by `.python-version`.
 
 ### 2. Set Up Environment Variables
 
 ```bash
-cp .env.example .env
+test -f .env || cp .env.example .env
 ```
 
-Keep `MODEL_PROVIDER=groq` and fill in `GROQ_API_KEY` for the first local run. Never commit `.env` or real credentials.
+The guides explicitly set `MODEL_PROVIDER=dry` for the local walkthrough.
+No keys are needed. Keep `.env` and real credentials out of Git.
 
 ### 3. Open the Repository in VS Code
 
@@ -102,15 +98,24 @@ code .
 
 Select the Python interpreter in `.venv/` and run commands from the repository root.
 
-## Run Locally
+## Run Without Docker
+
+For a quick API check, run the same app directly from Python. Use this
+instead of the container on port 8000, not alongside it.
 
 ```bash
-uv run uvicorn deployment_service.app:app --app-dir src --reload
-# In another terminal:
-uv run pytest
+MODEL_PROVIDER=dry uv run --locked uvicorn deployment_service.app:app --app-dir src
 ```
 
-Docker Desktop is required for the container exercise. The default `MODEL_PROVIDER=groq` requires `GROQ_API_KEY`. Set `MODEL_PROVIDER=dry` explicitly for the deterministic stub; tests always use this mode without credentials. For another live provider, select `mistral`, `openrouter`, `google` or `openai` and set the matching key and model from `.env.example`. For optional direct [Gemma access](https://ai.google.dev/gemma/docs/core/gemma_on_gemini_api) through Google AI Studio, independent of OpenRouter, set `MODEL_PROVIDER=google`, `GOOGLE_API_KEY` and `GOOGLE_MODEL=gemma-4-26b-a4b-it`. Google free [rate limits](https://ai.google.dev/gemini-api/docs/rate-limits) vary by project and model; use only non-sensitive exercise data on the free tier. Both Render examples use paid resources; deploying them can incur charges. Set `MODEL_PROVIDER=openai`, `OPENAI_API_KEY` and `OPENAI_MODEL=gpt-6-luna` for direct [OpenAI access](https://developers.openai.com/api/docs/models/gpt-6-luna). API usage is paid; reasoning is disabled to keep the sampling settings compatible.
+Use the requests in [step 01](01-container-contract.md#verify-the-api). Stop
+the process with Ctrl+C before switching to Docker. Run the isolated test
+suite with `uv run --locked pytest`; it does not require Docker or API keys.
+
+For an optional live run, the default provider is Groq. Choose `groq`,
+`mistral`, `openrouter`, `google`, or `openai` in `.env` and supply the
+matching key and model from [`.env.example`](.env.example). Provider and Render
+charges are separate; review pricing and protect public endpoints before
+enabling paid inference.
 
 ## Useful References
 

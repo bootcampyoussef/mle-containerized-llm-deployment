@@ -1,34 +1,89 @@
 # Container Contract
 
-The container must expose one stable process, listen on `0.0.0.0`, and provide
-separate liveness and readiness routes. Liveness answers whether the process can
-serve HTTP. Readiness answers whether its configuration is usable; it should not
-perform a paid generation call.
+Follow one request from your terminal to the API running inside Docker. By the
+end, you should be able to identify which part of that path failed when a
+request does not reach the model.
 
 ![Docker architecture showing clients, the Docker host, images, containers, and a registry](assets/docker-architecture.png)
 
 *Source: [Docker architecture](https://commons.wikimedia.org/wiki/File:Docker-architecture.png), Wikimedia Commons; CC BY-SA 4.0, by dc.*
 
-## Practice
+## Read The Container Configuration
 
-Build and run the image, then inspect all three API routes:
+The [Dockerfile](Dockerfile) installs dependencies from `uv.lock`, copies
+`src/`, and starts Uvicorn as a non-root user. An **image** packages those
+files and the startup command; a **container** is a running instance of it.
+The [Compose file](docker-compose.yml) supplies runtime settings and connects
+the container to your machine:
+
+| Setting | Why it matters |
+|---|---|
+| `--host 0.0.0.0 --port 8000` | Uvicorn accepts traffic on the container's network interfaces. |
+| `127.0.0.1:8000:8000` | Compose forwards port 8000 on your machine to port 8000 in the container. Only your machine can reach the published host port. |
+| `env_file` and `MODEL_PROVIDER` | Runtime configuration stays separate from the image. The shell override below selects the stub. |
+| `healthcheck` | A request made inside the container checks whether `/health` responds. It does not generate text. |
+
+## Start The Local Service
+
+Run from the repository root after [setup](README.md#setup). Keep port 8000
+free; stop any earlier Uvicorn process you started for this lesson.
 
 ```bash
-docker compose up --build
+MODEL_PROVIDER=dry docker compose up --build --wait
+docker compose ps
 ```
 
-Keep Compose running and use another terminal for the requests:
+Expect the `api` container to be running and healthy. The first build can take
+longer while Docker downloads the base image and dependencies. If the service
+does not start, inspect `docker compose logs api` before retrying. Keep the
+container running for the later local walkthroughs.
+
+## Verify The API
 
 ```bash
-curl http://localhost:8000/health
-curl http://localhost:8000/ready
-curl -X POST http://localhost:8000/generate \
+curl -i http://127.0.0.1:8000/health
+curl -i http://127.0.0.1:8000/ready
+curl -i -X POST http://127.0.0.1:8000/generate \
   -H "Content-Type: application/json" \
   -d '{"prompt":"Explain container readiness briefly."}'
 ```
 
-Change the Docker command so it binds only to `127.0.0.1`. Explain why the host
-can no longer reach it through the published port, then restore the command.
+| Request | Expected evidence | What it proves |
+|---|---|---|
+| `GET /health` | HTTP 200, `{"status":"healthy"}` | The process and HTTP route respond. |
+| `GET /ready` | HTTP 200, `"provider":"dry"`, and a configured model | The app initialized with the intended configuration; no provider call was made. |
+| `POST /generate` | HTTP 200, nonempty `text`, and a `dry:` model | The generation path returns a typed response through the stub. |
+
+In [app.py](src/deployment_service/app.py), FastAPI validates the request
+against [GenerateRequest](src/deployment_service/models.py) before calling the
+handler. The handler delegates to [GenerationService](src/deployment_service/service.py),
+which checks the cache and calls the provider only on a miss.
+
+```bash
+curl -i -X POST http://127.0.0.1:8000/generate \
+  -H "Content-Type: application/json" \
+  -d '{"prompt":"   "}'
+```
+
+Expect HTTP 422. The contract strips whitespace and rejects the empty prompt
+before the generation handler runs. This is different from a failed model
+request, which reaches the handler and is mapped to a service error.
+
+## Practice
+
+Predict what changes if Uvicorn listens only on `127.0.0.1` **inside** its
+container. Try a temporary second container from the same image:
+
+```bash
+MODEL_PROVIDER=dry docker compose run --rm -p 127.0.0.1:8001:8000 api \
+  uv run --no-sync uvicorn deployment_service.app:app --app-dir src \
+  --host 127.0.0.1 --port 8000
+```
+
+Once Uvicorn has started, try `curl -i http://127.0.0.1:8001/health` from another
+terminal. Expect a connection error or empty reply, not an HTTP health
+response. Compare it with the working port 8000. Stop the temporary
+container with Ctrl+C; the main Compose service remains available.
 
 ## Reference Answer
 
