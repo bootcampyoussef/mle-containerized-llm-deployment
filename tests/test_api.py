@@ -2,6 +2,7 @@
 
 import asyncio
 
+import pytest
 from httpx import ASGITransport, AsyncClient
 
 from deployment_service.app import app, service
@@ -35,13 +36,22 @@ def test_generate_and_validation() -> None:
     assert asyncio.run(post({"prompt": ""}))[0] == 422
 
 
-def test_provider_errors_do_not_leak_details(monkeypatch) -> None:
+@pytest.mark.parametrize(
+    ("error", "expected_status", "expected_detail"),
+    [
+        (RuntimeError, 502, "Generation provider unavailable"),
+        (TimeoutError, 504, "Generation request timed out"),
+    ],
+)
+def test_provider_errors_do_not_leak_details(
+    monkeypatch, error, expected_status, expected_detail
+) -> None:
     class FailingProvider:
         async def generate(self, request):
-            raise RuntimeError("secret provider response")
+            raise error("secret provider response")
 
     monkeypatch.setattr(service, "provider", FailingProvider())
     status, body = asyncio.run(post({"prompt": "error-path-check"}))
 
-    assert status == 502
-    assert body["detail"] == "Generation provider unavailable"
+    assert status == expected_status
+    assert body["detail"] == expected_detail

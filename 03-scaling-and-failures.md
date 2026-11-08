@@ -26,7 +26,7 @@ uv run --locked python scripts/load_test.py --requests 30 --concurrency 6
 ```
 
 Expect `successful_requests=30` and `error_rate=0.00%` on a healthy local
-run. Timings and request rates depend on the machine. Read the values together:
+run. Timings and request rates depend on the machine.
 
 The probe reuses three prompts, so it measures a cache-heavy workload, not raw
 model capacity. p95 uses the nearest-rank definition; transport failures count
@@ -64,6 +64,31 @@ For example, one local run produced:
 
 The stopped service looked faster because connections failed quickly. These
 timings illustrate the trap; they are not performance targets.
+
+## Check The Provider Boundary
+
+Now reproduce failures where the API **is** reachable. Run the existing
+in-process checks from the repository root. They need neither Docker nor
+provider credentials.
+
+```bash
+uv run --locked pytest -q \
+  tests/test_api.py::test_provider_errors_do_not_leak_details \
+  tests/test_boundaries.py::test_deadline_covers_provider_and_queue
+```
+
+Expect four passing cases. The [API test](tests/test_api.py) replaces the
+provider with one that raises an error. A generic failure becomes HTTP
+`502`; a timeout becomes HTTP `504`. Neither exposes the raw provider error
+to the client. The [deadline test](tests/test_boundaries.py) separately checks
+that the service times out both while waiting for a slot and during generation.
+
+Use the result to decide what to inspect next. No HTTP response? Check
+`docker compose ps`, `docker compose logs api`, and the published port.
+`422`? Inspect the request body before looking upstream. `502` or `504`
+from the app? Inspect the generation path; `504` alone does not tell you
+whether time was spent in the queue or upstream. A hosted proxy can also
+return a timeout, so check where the response originated.
 
 ## Practice
 
