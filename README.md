@@ -9,7 +9,7 @@ walkthrough can be followed as a configuration review or an instructor demo.
 
 ## Learning Objectives
 
-By completing this repository, you should be able to:
+By the end of this repository, you should be able to:
 
 - Deploy a containerized LLM API to Render with explicit resource, health, and
   secret configuration.
@@ -21,12 +21,30 @@ By completing this repository, you should be able to:
 
 ## Learning Path
 
+```mermaid
+flowchart TD
+    A["Client"] --> B["Local published port or Render"]
+    B --> C["FastAPI container"]
+    C --> E["Exact-match cache"]
+    E -->|"miss"| D["Concurrency limit"]
+    D --> F["Local stub or live provider"]
+    E -->|"hit"| G["Typed response"]
+    F --> G
+```
+
 | File / Folder | Description |
 |---|---|
 | [**01 - Container Contract**](01-container-contract.md) | Run the container and inspect health and readiness. |
 | [**02 - Render Deployment**](02-render-deployment.md) | Read the Blueprint and follow the optional hosted verification. |
 | [**03 - Scaling and Failures**](03-scaling-and-failures.md) | Interpret load evidence and diagnose deployment failures. |
 | [**04 - Caching and Cost**](04-caching-and-cost.md) | Connect cache hits, token usage, instance hours, and cost. |
+
+**First block (01-02):** Build the image, verify the API from the host, and
+trace how the same container contract maps to a hosted service.
+
+**Second block (03-04):** Keep the local container running. Compare a healthy
+run with a controlled outage, inspect a cache hit, and use the evidence to
+decide what you would measure before scaling.
 
 ### Additional Folders and Files
 
@@ -40,25 +58,13 @@ By completing this repository, you should be able to:
 | [**Load probe**](scripts/load_test.py) | Throughput, p95 latency and error rate. |
 | [**Assets**](assets/README.md) | Visual sources and credits. |
 
-## Lesson Workflow
+## Prerequisites
 
-**First block (01-02):** Build the image, verify the API from the host, and
-trace how the same container contract maps to a hosted service.
+Start Docker Desktop or a compatible Docker Engine with Compose before the
+[container walkthrough](01-container-contract.md).
 
-**Second block (03-04):** Keep the local container running. Compare a healthy
-run with a controlled outage, inspect a cache hit, and use the evidence to
-decide what you would measure before scaling.
-
-```mermaid
-flowchart TD
-    A["Client"] --> B["Local published port or Render"]
-    B --> C["FastAPI container"]
-    C --> E["Exact-match cache"]
-    E -->|"miss"| D["Concurrency limit"]
-    D --> F["Local stub or live provider"]
-    E -->|"hit"| G["Typed response"]
-    F --> G
-```
+> [!NOTE]
+> **Windows Users:** The examples use Bash syntax. Run them in Git Bash.
 
 ## Setup
 
@@ -66,31 +72,52 @@ Use [uv](https://docs.astral.sh/uv/getting-started/installation/) 0.13.5 or newe
 and Python 3.13.17 or a newer 3.13 patch release, as defined in
 [`.python-version`](.python-version).
 
-Start Docker Desktop or a compatible Docker Engine with Compose before the
-[container walkthrough](01-container-contract.md). The examples use
-Bash-compatible commands; on Windows, use Git Bash.
+### 1. Create a Copy from the Template (Optional)
 
-### 1. Clone and Install
+If you want your own GitHub copy for experiments, click **Use this template**,
+choose an owner and repository name, and leave **Include all branches** off.
+For the local walkthrough, you can also clone the lesson directly.
+
+---
+
+### 2. Clone the Repository
 
 ```bash
 git clone https://github.com/neuefische/mle-containerized-llm-deployment.git
+```
+
+If you created your own copy, use its clone URL instead.
+
+---
+
+### 3. Move into the Project Folder and Install Dependencies
+
+```bash
 cd mle-containerized-llm-deployment
 uv sync --locked
 ```
 
-Run the remaining commands from this folder. `uv sync --locked` creates
-`.venv/` using the Python version selected by `.python-version`.
+If you renamed your copy, use its folder name instead. Run the remaining
+commands from this folder. `uv sync --locked` creates `.venv/` using the
+Python version selected by `.python-version`.
 
-### 2. Set Up Environment Variables
+---
+
+### 4. Set Up Environment Variables
 
 ```bash
 test -f .env || cp .env.example .env
 ```
 
 The guides explicitly set `MODEL_PROVIDER=dry` for the local walkthrough.
-No keys are needed. Keep `.env` and real credentials out of Git.
+No keys are needed.
 
-### 3. Open the Repository in VS Code
+> [!CAUTION]
+> Never commit `.env` or real credentials.
+
+---
+
+### 5. Open the Repository in VS Code
 
 ```bash
 code .
@@ -117,17 +144,7 @@ matching key and model from [`.env.example`](.env.example). Provider and Render
 charges are separate; review pricing and protect public endpoints before
 enabling paid inference.
 
-## Useful References
+## References & Further Reading
 
-- [Render Blueprint specification](https://render.com/docs/blueprint-spec).
-- [Render health checks](https://render.com/docs/health-checks).
-- [Render scaling](https://render.com/docs/scaling).
-- [FastAPI deployment concepts](https://fastapi.tiangolo.com/deployment/concepts/).
-- [Groq OpenAI compatibility](https://console.groq.com/docs/openai).
-
-## Mermaid Diagrams
-
-This repository contains Mermaid diagrams. If you want them to render in VS Code, we recommend installing the `Markdown Preview Mermaid Support` extension:
-
-- [Install in VS Code](vscode:extension/bierner.markdown-mermaid)
-- [View on Marketplace](https://marketplace.visualstudio.com/items?itemName=bierner.markdown-mermaid)
+- Render: [Blueprint Specification](https://render.com/docs/blueprint-spec) / [Health Checks](https://render.com/docs/health-checks) / [Scaling](https://render.com/docs/scaling)
+- [FastAPI Deployment Concepts](https://fastapi.tiangolo.com/deployment/concepts/)
