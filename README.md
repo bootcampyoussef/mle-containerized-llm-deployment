@@ -21,50 +21,33 @@ By the end of this repository, you should be able to:
 
 ## Learning Path
 
-```mermaid
-flowchart TD
-    A["Client"] --> B["Local published port or Render"]
-    B --> C["FastAPI container"]
-    C --> E["Exact-match cache"]
-    E -->|"miss"| D["Concurrency limit"]
-    D --> F["Local stub or live provider"]
-    E -->|"hit"| G["Typed response"]
-    F --> G
-```
-
 | File / Folder | Description |
 |---|---|
-| [**01 - Container Contract**](01-container-contract.md) | Run the container and inspect health and readiness. |
-| [**02 - Render Deployment**](02-render-deployment.md) | Read the Blueprint and follow the optional hosted verification. |
-| [**03 - Scaling and Failures**](03-scaling-and-failures.md) | Interpret load evidence and diagnose deployment failures. |
-| [**04 - Caching and Cost**](04-caching-and-cost.md) | Connect cache hits, token usage, instance hours, and cost. |
-
-**First block (01-02):** Build the image, verify the API from the host, and
-trace how the same container contract maps to a hosted service.
-
-**Second block (03-04):** Keep the local container running. Compare a healthy
-run with a controlled outage, inspect a cache hit, and use the evidence to
-decide what you would measure before scaling.
+| [**01 - Container Contract**](01-container-contract.md) | Build the image, run the container, and verify health and readiness from the host. |
+| [**02 - Render Deployment**](02-render-deployment.md) | Map the same container contract to a Render Blueprint and follow the optional hosted verification. |
+| [**03 - Scaling and Failures**](03-scaling-and-failures.md) | Reuse the running container to compare a healthy load run with a controlled outage and diagnose the failure. |
+| [**04 - Caching and Cost**](04-caching-and-cost.md) | Inspect a cache hit and connect token usage, instance hours, and cost to what you would measure before scaling. |
 
 ### Additional Folders and Files
 
 | File / Folder | Description |
 |---|---|
+| [**assets**](assets/) | Visual aids referenced in the repository. |
+| [**Autoscaling Example**](deployment/) | Optional paid Render autoscaling configuration. |
+| [**scripts/load_test.py**](scripts/load_test.py) | Load probe that reports throughput, p95 latency, and error rate. |
+| [**Dockerfile**](Dockerfile) | Container image for the API. |
+| [**docker-compose.yaml**](docker-compose.yaml) | Local service definition with runtime settings and a health check. |
+| [**render.yaml**](render.yaml) | Render Blueprint for the hosted deployment. |
+| [**.env.example**](.env.example) | Provider configuration template and service limits. |
 | [**pyproject.toml**](pyproject.toml) | Project configuration and dependencies. |
 | [**uv.lock**](uv.lock) | Dependency lock file. |
-| [**.env.example**](.env.example) | Default settings and credential placeholders. |
-| [**Dockerfile**](Dockerfile), [**docker-compose.yml**](docker-compose.yml), [**render.yaml**](render.yaml) | Local and hosted deployment. |
-| [**Autoscaling example**](deployment/render.autoscaling.example.yaml) | Optional paid scaling configuration. |
-| [**Load probe**](scripts/load_test.py) | Throughput, p95 latency and error rate. |
-| [**Assets**](assets/README.md) | Visual sources and credits. |
 
 ## Prerequisites
 
-Start Docker Desktop or a compatible Docker Engine with Compose before the
-[container walkthrough](01-container-contract.md).
+- **Docker Desktop**: required to build the API image and run the container with `docker compose`. Follow the [installation instructions](https://docs.docker.com/get-docker/) if you do not have it yet. Make sure it is **installed and running** before you start [01 - Container Contract](01-container-contract.md).
 
 > [!NOTE]
-> **Windows Users:** The examples use Bash syntax. Run them in Git Bash.
+> **Windows Users:** The commands in this walkthrough use bash syntax. Use **Git Bash** (installed with [Git for Windows](https://git-scm.com/downloads/win)) instead of PowerShell to run them.
 
 ## Setup
 
@@ -72,58 +55,88 @@ Use [uv](https://docs.astral.sh/uv/getting-started/installation/) 0.13.5 or newe
 and Python 3.13.17 or a newer 3.13 patch release, as defined in
 [`.python-version`](.python-version).
 
-### 1. Create a Copy from the Template (Optional)
+> [!NOTE]
+> Throughout these steps, text in angle brackets like `<repo-name>` is a **placeholder**. Replace it, including the `< >` brackets, with your own value. For example, `cd <repo-name>` becomes `cd mle-containerized-llm-deployment`.
 
-If you want your own GitHub copy for experiments, click **Use this template**,
-choose an owner and repository name, and leave **Include all branches** off.
-For the local walkthrough, you can also clone the lesson directly.
+### 1. Create the Repository from the Template
 
----
+Click **Use this template** on GitHub.
 
-### 2. Clone the Repository
+When creating the repository:
 
-```bash
-git clone https://github.com/neuefische/mle-containerized-llm-deployment.git
-```
+- Set yourself as the **Owner**
+- Choose a repository name
+- Disable **Include all branches**
+- Click **Create repository**
 
-If you created your own copy, use its clone URL instead.
-
----
-
-### 3. Move into the Project Folder and Install Dependencies
-
-```bash
-cd mle-containerized-llm-deployment
-uv sync --locked
-```
-
-If you renamed your copy, use its folder name instead. Run the remaining
-commands from this folder. `uv sync --locked` creates `.venv/` using the
-Python version selected by `.python-version`.
+> [!IMPORTANT]
+> If you are working in pairs or groups, only **one person** should complete this step.
 
 ---
 
-### 4. Set Up Environment Variables
+### 2. Add Collaborators (Pairs/Groups Only)
+
+If working with teammates:
+
+1. Open the repository on GitHub
+2. Go to **Settings → Collaborators**
+3. Add your teammates as collaborators
+4. Share the repository link with your team
+
+Teammates should accept the invitation before continuing.
+
+---
+
+### 3. Clone the Repository
+
+Copy the SSH URL from the **Code** button on GitHub, then run:
 
 ```bash
-test -f .env || cp .env.example .env
+git clone <copied-ssh-url>
 ```
 
-The guides explicitly set `MODEL_PROVIDER=dry` for the local walkthrough.
-No keys are needed.
+The copied SSH URL will look like `git@github.com:<your-username>/<repo-name>.git`.
+
+---
+
+### 4. Move into the Project Folder and Install Dependencies
+
+This installs all dependencies and creates a virtual environment in `.venv/`.
+
+```bash
+cd <repo-name>
+uv sync
+```
+
+---
+
+### 5. Set Up Environment Variables
+
+Copy the provider settings and service limits:
+
+```bash
+cp .env.example .env
+```
+
+The guides explicitly set `MODEL_PROVIDER=dry` for the local walkthrough, so no keys are needed. For live calls, keep `MODEL_PROVIDER=groq` and fill in `GROQ_API_KEY`.
 
 > [!CAUTION]
-> Never commit `.env` or real credentials.
+> Never commit `.env`. It is git-ignored because environment files often hold secrets. Only `.env.example`, with placeholder or default values, belongs in the repository.
 
 ---
 
-### 5. Open the Repository in VS Code
+### 6. Open the Repository in VS Code
+
+> [!NOTE]
+> Make sure you open VS Code from the project root so it automatically detects the environment created by `uv sync`.
+
+Launch VS Code in the project root folder:
 
 ```bash
 code .
 ```
 
-Select the Python interpreter in `.venv/` and run commands from the repository root.
+Select the Python interpreter in `.venv/` created by `uv sync`. Run all commands in the lessons from the repository root.
 
 ## Run Without Docker
 
