@@ -1,22 +1,23 @@
-FROM python:3.13.17-slim AS runtime
+FROM ghcr.io/astral-sh/uv:0.13.5 AS uv
+FROM python:3.13.17-slim
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates \
     && rm -rf /var/lib/apt/lists/*
+    
+WORKDIR /app
 
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
+ENV PYTHONUNBUFFERED=1 \
     UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy
 
-COPY --from=ghcr.io/astral-sh/uv:0.13.5 /uv /uvx /bin/
+COPY --from=uv /uv /uvx /bin/
 
-WORKDIR /app
 COPY pyproject.toml uv.lock ./
-RUN uv sync --locked --no-dev --no-install-project
+RUN uv sync --locked --no-dev --no-install-project --no-cache
 
 COPY src ./src
-RUN useradd --create-home appuser
+RUN useradd --create-home --shell /usr/sbin/nologin appuser
 USER appuser
 
 ENV PATH="/app/.venv/bin:$PATH"
