@@ -4,8 +4,8 @@ This repository teaches how to package an asynchronous LLM API in Docker and
 deploy it to [Render](https://render.com/docs) with explicit health checks,
 resource, scaling, caching, and cost decisions. The API, Dockerfile, and
 deployment configuration are supplied. Start with the local stub so you can
-observe the service behavior without an API key or cloud account. The hosted
-walkthrough can be followed as a configuration review or an instructor demo.
+observe the service behavior without an API key or cloud account. The optional
+hosted walkthrough uses a Free Render instance with Groq by default.
 
 ## Learning Objectives
 
@@ -24,7 +24,7 @@ By the end of this repository, you should be able to:
 | File / Folder | Description |
 |---|---|
 | [**01 - Container Contract**](01-container-contract.md) | Build the image, run the container, and verify health and readiness from the host. |
-| [**02 - Render Deployment**](02-render-deployment.md) | Map the same container contract to a Render Blueprint and follow the optional hosted verification. |
+| [**02 - Render Deployment**](02-render-deployment.md) | Read the Blueprint and optionally deploy and verify the service on Render Free. |
 | [**03 - Scaling and Failures**](03-scaling-and-failures.md) | Reuse the running container to compare a healthy load run with a controlled outage and diagnose the failure. |
 | [**04 - Caching and Cost**](04-caching-and-cost.md) | Inspect a cache hit and connect token usage, instance hours, and cost to what you would measure before scaling. |
 
@@ -66,7 +66,8 @@ When creating the repository:
 
 - Set yourself as the **Owner**
 - Choose a repository name
-- Disable **Include all branches**
+- Keep the repository **Private**
+- Enable **Include all branches** only if the lesson is on a non-default branch
 - Click **Create repository**
 
 > [!IMPORTANT]
@@ -96,6 +97,9 @@ git clone <copied-ssh-url>
 ```
 
 The copied SSH URL will look like `git@github.com:<your-username>/<repo-name>.git`.
+If a lesson branch was shared, clone with
+`git clone --branch <lesson-branch> <copied-ssh-url>` and select the same branch
+when deploying on Render.
 
 ---
 

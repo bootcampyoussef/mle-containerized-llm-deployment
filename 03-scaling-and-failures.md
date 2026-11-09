@@ -1,13 +1,13 @@
 # Scaling And Failure Diagnosis
 
-The default Blueprint uses one instance to keep the exercise predictable.
+The default Blueprint uses one Free instance to keep the exercise predictable.
 `deployment/render.autoscaling.example.yaml` shows the paid autoscaling fields
 without enabling them accidentally. Render autoscaling requires a Pro workspace
 and bills every active instance.
 
-Compare the example with the main Blueprint. Autoscaling would replace
-`numInstances` with the `scaling` block and keep the provider settings and
-secret configuration. The workspace subscription and the service's `plan`
+Compare the example with the main Blueprint. Autoscaling would change
+`plan: free` to a paid instance plan and add the `scaling` block while keeping
+the provider settings. The workspace subscription and the service's `plan`
 (instance size) are separate choices. No scaling change is needed for this lab.
 
 ![DistServe goodput chart showing latency constraints as request rate increases](assets/distserve-goodput.png)

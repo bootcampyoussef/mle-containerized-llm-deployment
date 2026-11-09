@@ -2,13 +2,14 @@ services:
   - type: web
     name: mle-containerized-llm-service
     runtime: docker
-    plan: starter
+    plan: free
     dockerfilePath: ./Dockerfile
     dockerContext: .
     healthCheckPath: /health
     autoDeployTrigger: commit
-    numInstances: 1
     envVars:
+      - key: PORT
+        value: "8000"
       - key: MODEL_PROVIDER
         value: groq
       - key: GROQ_MODEL
