@@ -3,6 +3,7 @@
 from typing import Any, Protocol
 
 from langchain.chat_models import init_chat_model
+from langchain_core.exceptions import ModelTimeoutError
 from pydantic import SecretStr
 
 from deployment_service.config import Settings
@@ -83,6 +84,8 @@ class ChatProvider:
                 temperature=request.temperature,
                 **{self.token_limit_key: request.max_tokens},
             )
+        except ModelTimeoutError as error:
+            raise TimeoutError("Model request timed out") from error
         except IndexError as error:
             raise ValueError("Provider returned no choices") from error
         if str(response.response_metadata.get("finish_reason")).lower() != "stop":

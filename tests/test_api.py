@@ -2,10 +2,13 @@
 
 import asyncio
 
+import httpx2
 import pytest
 from httpx import ASGITransport, AsyncClient
 
 from deployment_service.app import app, service
+from deployment_service.config import Settings
+from deployment_service.provider import ChatProvider
 
 
 async def get(path: str) -> tuple[int, dict[str, object]]:
@@ -55,3 +58,19 @@ def test_provider_errors_do_not_leak_details(
 
     assert status == expected_status
     assert body["detail"] == expected_detail
+
+
+def test_openai_connect_timeout_returns_504(monkeypatch) -> None:
+    async def connect_timeout(client, request, **kwargs):
+        raise httpx2.ConnectTimeout("secret provider response", request=request)
+
+    monkeypatch.setattr(httpx2.AsyncClient, "send", connect_timeout)
+    monkeypatch.setattr(
+        service,
+        "provider",
+        ChatProvider(Settings(provider="openai", openai_api_key="test-only")),
+    )
+    status, body = asyncio.run(post({"prompt": "openai-timeout-check"}))
+
+    assert status == 504
+    assert body == {"detail": "Generation request timed out"}

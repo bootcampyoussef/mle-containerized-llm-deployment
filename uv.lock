@@ -894,6 +894,7 @@ dependencies = [
     { name = "fastapi" },
     { name = "httpx" },
     { name = "langchain" },
+    { name = "langchain-core" },
     { name = "langchain-google-genai" },
     { name = "langchain-groq" },
     { name = "langchain-mistralai" },
@@ -906,6 +907,7 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "httpx2" },
     { name = "pytest" },
     { name = "ruff" },
     { name = "rumdl" },
@@ -917,6 +919,7 @@ requires-dist = [
     { name = "fastapi", specifier = ">=0.161.1" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "langchain", specifier = ">=1.4.7" },
+    { name = "langchain-core", specifier = ">=1.7.0" },
     { name = "langchain-google-genai", specifier = ">=4.4.2" },
     { name = "langchain-groq", specifier = ">=1.1.3" },
     { name = "langchain-mistralai", specifier = ">=1.1.6" },
@@ -929,6 +932,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "httpx2", specifier = ">=2.16.0" },
     { name = "pytest", specifier = ">=9.1.1" },
     { name = "ruff", specifier = ">=0.17.2" },
     { name = "rumdl", specifier = ">=0.3.0" },
