@@ -13,7 +13,7 @@ request does not reach the model.
 The [Dockerfile](Dockerfile) installs dependencies from `uv.lock`, copies
 `src/`, and starts Uvicorn as a non-root user. An **image** packages those
 files and the startup command; a **container** is a running instance of it.
-The [Compose file](docker-compose.yml) supplies runtime settings and connects
+The [Compose file](docker-compose.yaml) supplies runtime settings and connects
 the container to your machine:
 
 | Setting | Why it matters |
