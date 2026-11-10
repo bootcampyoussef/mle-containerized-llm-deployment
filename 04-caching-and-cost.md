@@ -1,7 +1,7 @@
 # Caching And Cost
 
-Every request that reaches an LLM provider costs money, takes time, and counts
-against the provider's rate limit. A cache stores answers the service has
+Each request that reaches an LLM provider takes time, counts toward usage
+limits, and can incur token charges. A cache stores answers the service has
 already generated and returns them when the same request arrives again. In this
 lesson you watch the service's cache at work, see how it reports token usage
 and estimated cost, and work through a monthly cost estimate.

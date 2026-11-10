@@ -4,8 +4,8 @@ This repository teaches how to package an asynchronous LLM API in Docker and
 deploy it to Render with explicit health checks,
 resource, scaling, caching, and cost decisions. The API, Dockerfile, and
 deployment configuration are supplied. You first run the service locally in
-dry-run mode to observe its behavior, then deploy the same container to a Free
-Render web service.
+dry-run mode, then deploy the same container as a Free Render web service
+without an API key. A short live Groq check is optional.
 
 ## Learning Objectives
 
@@ -38,7 +38,7 @@ By the end of this repository, you should be able to:
 | [**scripts/load_test.py**](scripts/load_test.py) | Load probe that reports throughput, p95 latency, and error rate. |
 | [**Dockerfile**](Dockerfile) | Container image for the API. |
 | [**docker-compose.yaml**](docker-compose.yaml) | Local service definition with runtime settings and a health check. |
-| [**render.yaml**](render.yaml) | Render Blueprint, used as the reference in lesson 02. |
+| [**render.yaml**](render.yaml) | Blueprint reference with Groq as the default; lesson 02 creates the service manually in dry-run mode. |
 | [**.env.example**](.env.example) | Provider configuration template and service limits. |
 | [**pyproject.toml**](pyproject.toml) | Project configuration and dependencies. |
 | [**uv.lock**](uv.lock) | Dependency lock file. |

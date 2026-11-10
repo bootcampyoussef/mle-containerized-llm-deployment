@@ -184,7 +184,7 @@ The Docker image contains the code and its dependencies. Which model and provide
 service uses is configuration. Follow these steps to switch the model without
 building a new image.
 
-1. In [`.env`](.env), change `GROQ_MODEL` to `openai/gpt-oss-120b`.
+1. In `.env`, change `GROQ_MODEL` to `openai/gpt-oss-120b`.
 
 2. Restart the service **without** `--build`, still in dry-run mode:
 
@@ -208,12 +208,12 @@ building a new image.
    {"status":"ready","provider":"dry","model":"openai/gpt-oss-120b"}
    ```
 
-4. **Optional, with a Groq API key in `.env`:** restart the service without
-   the prefix, then send the `/generate` request from
+4. **Optional, with a Groq Free plan key in `.env`:** explicitly select Groq,
+   then send the `/generate` request from
    [Verify The API](#verify-the-api) again:
 
    ```bash
-   docker compose up --wait
+   MODEL_PROVIDER=groq docker compose up --wait
    curl -i -X POST http://127.0.0.1:8000/generate \
      -H "Content-Type: application/json" \
      -d '{"prompt":"Explain container readiness briefly."}'

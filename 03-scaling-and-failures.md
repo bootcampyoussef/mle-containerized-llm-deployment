@@ -137,22 +137,24 @@ timings illustrate the trap; they are not performance targets. Verify
 ## Diagnose A Failing Provider
 
 In the outage, nothing answered. A harder case is a service that looks healthy
-but cannot generate anything. Reproduce one with an invalid API key: Groq
-rejects the requests, so they cost nothing.
+but cannot generate anything. Use the same image in a temporary container with
+a dummy key that Groq rejects. This needs network access to Groq; the
+in-process tests below reproduce the error mapping offline.
 
-1. In `.env`, set `GROQ_API_KEY=invalid-key`. If you already use a real key,
-   note it first so you can restore it.
-
-2. Start the service **without** the dry-run prefix, so it uses
-   `MODEL_PROVIDER=groq` from `.env`:
+1. In one terminal, stop the Compose service and start the temporary container
+   from the image it used. Plain `docker run` does not load your `.env`:
 
    ```bash
-   docker compose up --wait
+   docker compose stop api
+   docker run --rm --pull=never -p 127.0.0.1:8000:8000 \
+     -e MODEL_PROVIDER=groq -e GROQ_API_KEY=invalid-key \
+     "$(docker compose images -q api)"
    ```
 
-   The container becomes healthy: the key is not empty, so the app starts.
+   Wait for Uvicorn to start. The key is not empty, so the app can start
+   without checking whether the provider will accept it.
 
-3. Send the checks from lesson 01:
+2. In a second terminal, send the checks from lesson 01:
 
    ```bash
    curl -i http://127.0.0.1:8000/health
@@ -171,7 +173,7 @@ rejects the requests, so they cost nothing.
    {"detail":"Generation provider unavailable"}
    ```
 
-4. Run the load probe again:
+3. Run the load probe again from the second terminal:
 
    ```bash
    uv run python scripts/load_test.py --requests 30 --concurrency 6
@@ -189,20 +191,15 @@ rejects the requests, so they cost nothing.
    error_rate=100.00%
    ```
 
-5. Find the cause in the service logs:
-
-   ```bash
-   docker compose logs api | grep "Error code" | tail -1
-   ```
-
-   Expected output:
+4. Look for the cause in the first terminal. Groq should reject the dummy key
+   with an authentication error:
 
    ```text
-   api-1  | groq.AuthenticationError: Error code: 401 - {'error': {'message': 'Invalid API Key', 'type': 'invalid_request_error', 'code': 'invalid_api_key'}}
+   groq.AuthenticationError: Error code: 401 - ... Invalid API Key ...
    ```
 
-6. Restore `GROQ_API_KEY` in `.env` to its previous value, and switch back to
-   dry-run mode for the next lesson:
+5. Press **Ctrl+C** in the first terminal to stop and remove the temporary
+   container. Start the dry-run Compose service again for the next lesson:
 
    ```bash
    MODEL_PROVIDER=dry docker compose up --wait

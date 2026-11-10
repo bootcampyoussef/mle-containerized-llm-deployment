@@ -10,12 +10,12 @@ services:
     envVars:
       - key: PORT
         value: "8000"
-      # dry needs no API key. For live calls, set groq and add GROQ_API_KEY
-      # in the Render dashboard; never commit the key to this file.
       - key: MODEL_PROVIDER
-        value: dry
+        value: groq
       - key: GROQ_MODEL
         value: openai/gpt-oss-20b
+      - key: GROQ_API_KEY
+        sync: false
       - key: MAX_CONCURRENT_REQUESTS
         value: "4"
       - key: REQUEST_TIMEOUT_SECONDS
