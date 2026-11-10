@@ -39,8 +39,12 @@ class GenerationService:
                 estimated_cost_usd=0,
             )
 
-        async with self.semaphore:
-            result = await self.provider.generate(request)
+        # The deadline includes queueing, not only the upstream HTTP call.
+        async with asyncio.timeout(self.settings.request_timeout_seconds):
+            async with self.semaphore:
+                result = await self.provider.generate(request)
+        if not result.text.strip():
+            raise ValueError("Provider returned no answer")
         self.cache.set(key, result)
         return GenerateResponse(
             text=result.text,
