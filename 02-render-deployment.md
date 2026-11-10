@@ -1,96 +1,265 @@
 # Render Deployment
 
-Deploy the container from [step 01](01-container-contract.md) on a single
-[Free Render web service](https://render.com/docs/free). Groq is the default
-and needs an API key. Use dry mode to verify the deployment without a key,
-or stay local if you do not want to create a Render account.
+[Render](https://render.com/) is a hosting platform that builds a Docker image from your Git
+repository and runs it on a public HTTPS address. In this lesson you deploy the
+container from lesson 01 on a single Free Render
+web service. The container contract stays the same; only the platform that
+supplies the port, the environment variables, and the health check changes.
 
-## Read The Blueprint
+The service deploys in dry-run mode, so you need a Render account but no API
+key. Switching the deployment to Groq for live answers is an optional step.
 
-Open [render.yaml](render.yaml) alongside the [Dockerfile](Dockerfile).
-The [Blueprint](https://render.com/docs/blueprint-spec) describes how Render
-should build and run the service from Git. The container still runs FastAPI;
-in live mode the external provider runs the model.
+```mermaid
+flowchart LR
+    G["git push to your branch"] --> R["Render builds<br>the Dockerfile"]
+    R --> C["Container<br>(PORT 8000)"]
+    D["Environment variables<br>from the Render dashboard"] -.-> C
+    H["Render health check<br>GET /health"] -.-> C
+    U["curl on your machine"] -->|"https://…onrender.com"| C
+```
 
-| Field | Follow it through the deployment |
-|---|---|
-| `runtime: docker`, `dockerfilePath`, `dockerContext` | Render builds the same Dockerfile from the repository root. It does not use the image already on your laptop. |
-| `PORT=8000`, `healthCheckPath: /health` | The port matches the Dockerfile. Render probes this route before routing traffic to the new instance; a passing check does not validate inference. |
-| `plan: free` | Render runs one instance. It can sleep when idle; the first request after that may be slow. |
-| `MODEL_PROVIDER=groq`, `GROQ_API_KEY` | Groq runs the model. `sync: false` prompts for the key in Render instead of storing it in Git. |
+## Read The Service Configuration
 
-Read [Render's health-check behavior](https://render.com/docs/health-checks)
-and predict what happens if the configured path is misspelled: the process can
-start successfully while the deployment fails its HTTP check. Build logs,
-startup logs, and health-check results answer different questions.
+The settings for the Render service are written down in
+[`render.yaml`](render.yaml). On Render, a file like this is called a
+**Blueprint**: it describes the services Render should create and how to build
+and run them, so a team can keep its deployment configuration in Git. Render
+asks for a payment method before it creates services from a Blueprint, so in
+this lesson you enter the same settings manually through a Web Service form
+instead. The file remains the reference for what each setting does.
 
-## Optional Hosted Walkthrough
+```yaml
+services:
+  - type: web
+    name: mle-containerized-llm-service
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    autoDeployTrigger: commit
+    envVars:
+      - key: PORT
+        value: "8000"
+      - key: MODEL_PROVIDER
+        value: dry
+      - key: GROQ_MODEL
+        value: openai/gpt-oss-20b
+      - key: MAX_CONCURRENT_REQUESTS
+        value: "4"
+      - key: REQUEST_TIMEOUT_SECONDS
+        value: "30"
+```
 
-To deploy without a key, set `MODEL_PROVIDER` to `dry` and remove the
-`GROQ_API_KEY` entry from `render.yaml` in your copy. Push that change to
-the branch you will connect before creating the Blueprint.
+Most fields have a counterpart in the Compose file:
 
-1. In the Render dashboard, choose **New > Blueprint**. Connect your private
-   GitHub copy and select the branch with this `render.yaml`. Before deploying,
-   confirm that the preview shows one Docker web service on the **Free** plan.
-2. If you are using Groq, enter a key from your Groq Free plan account when
-   Render prompts for `GROQ_API_KEY`. Keep the key out of the Dockerfile and Git.
-3. Wait for the service to go live. Set `URL` to its HTTPS address, without a
-   trailing slash, and run one smoke test:
+- **`type: web`** and **`name`** create one public web service. The service
+  name becomes part of its `onrender.com` address. In the form, the **Name**
+  field takes this role and is prefilled with your repository name.
+- **`runtime: docker`**, **`dockerfilePath`**, and **`dockerContext`** play
+  the role of `build: .`. Render builds the same Dockerfile from the repository
+  root. It does not use the image already on your laptop, so only committed
+  and pushed changes reach the deployment.
+- **`plan: free`** runs one instance at no cost. A Free instance stops when it
+  receives no traffic for 15 minutes, and the first request after that has to
+  wait for it to start again. The exercise
+  below measures that delay.
+- **`autoDeployTrigger: commit`** redeploys the service after every push to the
+  connected branch. Locally, you rebuild yourself with `--build`.
+- **`PORT=8000`** replaces the `ports` mapping. Render forwards traffic from its
+  public HTTPS address to the port in `PORT`, so it has to match the
+  `--port 8000` in the Dockerfile's `CMD`.
+- **`healthCheckPath: /health`** replaces the Compose `healthcheck`. Render only
+  sends traffic to a new deployment once this route responds. If the path is
+  misspelled, the process can start successfully while the deployment still
+  fails its check. Build logs, startup logs, and health-check results answer
+  different questions. Like the local check, a passing `/health` does not prove
+  that inference works.
+- **`envVars`** replaces `.env` and the `environment` block.
+  `MODEL_PROVIDER: dry` is the Render counterpart of the `MODEL_PROVIDER=dry`
+  prefix you used locally. `GROQ_MODEL` and the two service limits match the
+  defaults in the code, so you do not have to set them. Secrets such as
+  `GROQ_API_KEY` never go into this file: you add them in the Render dashboard,
+  which keeps them out of Git.
 
-   ```bash
-   URL="https://your-service.onrender.com"
-   curl -fsS "$URL/health"
-   curl -fsS "$URL/ready"
-   curl -fsS "$URL/generate" --json '{"prompt":"Say hello."}'
+## Deploy To Render
+
+1. Sign in to Render and choose **New > Web Service**. The first time, Render
+   cannot see your repositories yet.
+   Click **GitHub - Configure account** in the side panel. GitHub opens an
+   **Install Render** page: choose **Only select repositories**, pick your copy
+   of this repository, and click **Install**.
+
+2. Back in Render, select your copy and fill in the form with the settings
+   from `render.yaml`:
+
+   | Form field | Value |
+   |---|---|
+   | **Name** | Prefilled with your repository name. Keep it or choose another; it becomes part of the service's URL. |
+   | **Language** | `Docker` |
+   | **Branch** | The branch you push to, usually `main` |
+   | **Compute** | **Free**. Select it actively: the form preselects a paid tier. |
+   | **Environment Variables** | `PORT` = `8000` and `MODEL_PROVIDER` = `dry` |
+   | **Health Check Path** (under **Advanced**) | `/health` |
+
+   Leave the other fields at their defaults. Do not skip `MODEL_PROVIDER`:
+   without it, the app falls back to Groq and, with no key, refuses to start.
+
+3. Click **Deploy web service** and wait for the deploy to go live. The logs
+   show the Docker build first, then Uvicorn starting, the same lines you saw
+   locally with `docker compose logs api`.
+
+4. Open the service's URL, shown at the top of its page, in your browser. The
+   welcome message confirms that the service is reachable:
+
+   ```json
+   {"message":"Containerized LLM service is running. Use GET /health, GET /ready, or POST /generate."}
    ```
 
-   Expect HTTP 200 on all three requests. `/ready` reports the configured
-   provider; `/generate` checks that it can return an answer. In dry mode,
-   expect `Dry response: Say hello.` and no call to Groq.
+   Then set `URL` to the same address and send the
+   checks from lesson 01:
 
-Use sample prompts only. The web service is public and has no authentication
-or per-client rate limit. Keep live tests brief; use dry mode or add access
-controls before sharing the URL. Run the load probe locally. Render and
-[Groq](https://console.groq.com/docs/rate-limits) have separate free-tier quotas.
-Render can bill build or bandwidth overages if your workspace has a payment
-method. Use the local option if you are near a limit.
+   ```bash
+   URL="https://<your-service>.onrender.com"
+   curl -i "$URL/health"
+   curl -i "$URL/ready"
+   curl -i -X POST "$URL/generate" \
+     -H "Content-Type: application/json" \
+     -d '{"prompt":"Say hello."}'
+   ```
 
-If you skip hosting, use the [local checks from step 01](01-container-contract.md#verify-the-api)
-and the Blueprint table to explain what you would verify on Render.
+   Each request should return HTTP 200, followed by these bodies:
 
-## Practice
+   ```json
+   {"status":"healthy"}
+   {"status":"ready","provider":"dry","model":"openai/gpt-oss-20b"}
+   {"text":"Dry response: Say hello.","model":"dry:openai/gpt-oss-20b","usage":{"input_tokens":2,"output_tokens":4},"cache_hit":false,"latency_ms":0.62,"estimated_cost_usd":0.0}
+   ```
 
-For each verification request, note what an unexpected result would make you
-inspect next: the health path, runtime settings, the provider, or input
-validation. If you ran a hosted demo, record the deployed revision and label
-first-request timings separately from later requests. A slow first request
-alone does not identify whether the app, provider, or network caused the wait.
-When finished, set `services: []` in your copy of `render.yaml`, push the
-change and sync the Blueprint. Then [delete the service in Render](https://render.com/docs/infrastructure-as-code#deleting-resources).
-Deleting it before removing it from the Blueprint can cause the next sync to
-recreate it.
+5. **Optional, with a Groq API key:** switch the deployment to live answers. In
+   the service's **Environment** settings, set `MODEL_PROVIDER` to `groq`, add
+   `GROQ_API_KEY` with your key, and save. Render redeploys the service with
+   the new values; no code change or push is needed, just like the model switch
+   in lesson 01. Once it is live, `/ready` reports `"provider":"groq"`, and
+   `/generate` returns a real answer from `openai/gpt-oss-20b` without the
+   `dry:` prefix. Set `MODEL_PROVIDER` back to `dry` when you are done, so the
+   public URL stops spending your quota.
 
-## Reference Answer
+Keep these limits in mind while the service is running:
 
-<details>
-<summary>Show Reference Answer</summary>
+- **The service is public.** It has no authentication or per-client rate limit.
+  In dry-run mode that costs nothing, but with a live provider anyone who
+  finds the URL spends your quota or credits. Use sample prompts only and keep
+  live tests brief.
+- **Quotas are separate.** Render and your LLM provider each have their own
+  limits. If a Free service uses up its monthly bandwidth or build minutes,
+  Render suspends it for the rest of the month, or bills the overage if your
+  workspace has a payment method.
+- **Run the load probe locally.** Lesson 03 sends many requests in a short
+  time; do not point it at your Render URL.
 
-`GROQ_API_KEY` uses `sync: false`, which makes Render request the value during
-Blueprint creation. `healthCheckPath: /health` lets Render remove an unhealthy
-instance from service without spending tokens on a readiness probe.
+## Exercise: Measure A Cold Start
 
-</details>
+A **cold start** is the extra delay when a request arrives and no instance is
+running yet: the platform has to start the container and the app before it can
+answer. A warm instance is already running and answers right away. Measure
+both, first locally and then on Render.
+
+1. Stop the local container, then start it again and time how long it takes
+   until `/health` answers:
+
+   ```bash
+   docker compose stop api
+   time (
+     docker compose start api
+     until curl -sf -o /dev/null http://127.0.0.1:8000/health
+     do sleep 0.2
+     done
+   )
+   ```
+
+   The elapsed time is about a second. `docker compose start` reuses the
+   stopped container, so it is still in dry-run mode.
+
+2. Send one more request to the now warm container:
+
+   ```bash
+   curl -s -o /dev/null -w "%{http_code} %{time_total}s\n" http://127.0.0.1:8000/health
+   ```
+
+   Expect `200` and a few milliseconds.
+
+3. Leave your Render service without traffic for at least 15 minutes, so the
+   Free instance stops. Then send the same timed request twice:
+
+   ```bash
+   curl -s -o /dev/null -w "%{http_code} %{time_total}s\n" "$URL/health"
+   curl -s -o /dev/null -w "%{http_code} %{time_total}s\n" "$URL/health"
+   ```
+
+   The first request waits while Render starts a new instance, which can take
+   from several seconds up to about a minute. The second answers in well under
+   a second.
+
+   Use `curl` rather than the browser here: during the start, Render shows
+   browsers a loading page instead of the API's answer.
+
+Locally, a cold start only includes starting the container and the app. On
+Render, the platform also has to schedule an instance and load the image before
+the app can start, so the first request takes far longer. The health check does
+not hide this: whoever sends the first request after an idle period waits for
+the start. Stopping idle instances like this is called **scale-to-zero**: the
+platform runs zero instances while nobody uses the service and starts one when
+a request arrives. That is the trade-off of the Free plan. It costs nothing
+while idle, but a service that must always answer quickly needs at least one instance that
+keeps running, which is a paid plan. When you time requests to your Render
+service, label the first request separately from later ones. A slow first
+request alone does not tell you whether the app, the provider, or the network
+caused the wait.
+
+## Clean Up
+
+A Free service costs nothing while idle, but remove it once you have finished
+the exercise: open the service's **Settings**, scroll to the bottom, and click
+**Delete Web Service**.
 
 ## Check Your Understanding
 
-1. Is a working local container proof of a successful Render deployment?
-2. Does the Free Render plan make Groq usage unlimited?
+1. Your container works locally. Is that proof that the Render deployment will
+   work?
+2. The deploy goes live and `/health` returns 200, but every `/generate` request
+   returns 502. Why did the health check not catch this, and where do you look
+   first?
+3. Scale-to-zero hosting, like the Render Free plan, saves cost by running no
+   instance while a service is idle. For which kinds of services is the resulting cold start
+   acceptable, and for which is it not?
 
 <details>
 <summary>Show Reference Answers</summary>
 
-1. No. Verify the deployed routes and runtime configuration separately.
-2. No. Render and Groq track usage separately. Dry mode makes no provider calls.
+1. No. Render builds from the pushed branch, not from your local image, and it
+   takes its environment variables from the dashboard instead of `.env`.
+   Uncommitted changes, a different `PORT`, or a missing variable only show up
+   on Render, so the deployed routes must be verified separately.
+2. `/health` only confirms that the process answers HTTP requests; it never
+   calls the provider. A 502 comes from the generation path, so check the
+   service logs and the provider settings in the dashboard: an invalid key, a
+   model name the provider does not offer, or an exhausted quota all produce
+   it.
+3. It is acceptable when an occasional slow first request does no harm, for
+   example a demo, an internal tool, or a background job that is not waiting
+   for an immediate answer. It is not acceptable for user-facing or
+   latency-sensitive services, or when callers have short timeouts and would
+   fail before the instance is up. Those need at least one instance that keeps
+   running.
 
 </details>
+
+## Further Reading
+
+- Render: [Free Instances](https://render.com/docs/free) /
+  [Docker on Render](https://render.com/docs/docker) /
+  [Environment Variables](https://render.com/docs/environment-variables) /
+  [Health Checks](https://render.com/docs/health-checks) /
+  [Blueprint Specification](https://render.com/docs/blueprint-spec)
+- [Groq Rate Limits](https://console.groq.com/docs/rate-limits)
