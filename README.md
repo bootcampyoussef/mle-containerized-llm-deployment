@@ -11,12 +11,14 @@ Render web service.
 
 By the end of this repository, you should be able to:
 
+- Run an LLM API in Docker and explain how its ports, environment variables,
+  and health checks form a container contract.
 - Deploy a containerized LLM API to Render with explicit resource, health, and
   secret configuration.
-- Configure and justify manual or automatic scaling for variable inference
-  load.
-- Diagnose cold starts, memory pressure, provider latency, and request
-  timeouts.
+- Explain when horizontal scaling and autoscaling help an LLM API, and which
+  limits they cannot remove.
+- Diagnose cold starts, outages, and provider failures from health checks,
+  load-test results, and logs.
 - Measure exact-match cache behavior and estimate fixed plus token-based cost.
 
 ## Learning Path
