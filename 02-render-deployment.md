@@ -21,10 +21,10 @@ flowchart LR
 ## Read The Service Configuration
 
 [`render.yaml`](render.yaml) is a **Blueprint**: it describes the services
-Render should create and how to build and run them. In our test, the Blueprint
-creation flow asked for a payment method even on the Free instance plan.
-Use **New > Web Service** for this lesson instead. The Blueprint is a reference
-for the shared settings and defaults to Groq; the manual lab uses `dry`.
+Render should create and how to build and run them. In Render, the Blueprint
+creation flow asks for a payment method even on the Free instance plan.
+We use **New > Web Service** for this lesson instead. The Blueprint is a reference
+for the shared settings and defaults to Groq; this lesson uses `dry`.
 
 ```yaml
 services:
@@ -74,7 +74,7 @@ Most fields have a counterpart in the Compose file:
   fails its check. Build logs, startup logs, and health-check results answer
   different questions. Like the local check, a passing `/health` does not prove
   that inference works.
-- **`envVars`** replaces `.env` and the `environment` block. In the manual lab,
+- **`envVars`** replaces `.env` and the `environment` block. For this lesson,
   set `MODEL_PROVIDER=dry` as you did locally, and leave out `GROQ_API_KEY`.
   The Blueprint sets `groq` instead and uses `sync: false` to prompt for the
   key at creation without storing its value in Git. The model and service
@@ -88,13 +88,13 @@ Most fields have a counterpart in the Compose file:
    **Install Render** page: choose **Only select repositories**, pick your copy
    of this repository, and click **Install**.
 
-2. Back in Render, select your copy and fill in the form for the manual lab:
+2. Back in Render, select your copy and fill in the form for this manual setup:
 
    | Form field | Value |
    |---|---|
    | **Name** | Prefilled with your repository name. Keep it or choose another; it becomes part of the service's URL. |
    | **Language** | `Docker` |
-   | **Branch** | The lesson branch you cloned in Setup, usually `main` |
+   | **Branch** | The lesson branch you cloned in Setup, usually `main`. |
    | **Compute** | **Free**. Select it actively: the form preselects a paid tier. |
    | **Environment Variables** | `PORT` = `8000` and `MODEL_PROVIDER` = `dry` |
    | **Health Check Path** (under **Advanced**) | `/health` |
