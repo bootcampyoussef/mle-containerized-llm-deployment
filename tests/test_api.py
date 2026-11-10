@@ -27,6 +27,12 @@ async def post(payload: dict[str, object]) -> tuple[int, dict[str, object]]:
         return response.status_code, response.json()
 
 
+def test_root_points_to_routes() -> None:
+    status, body = asyncio.run(get("/"))
+    assert status == 200
+    assert "/generate" in str(body["message"])
+
+
 def test_health_and_readiness() -> None:
     assert asyncio.run(get("/health"))[0] == 200
     assert asyncio.run(get("/ready"))[1]["provider"] == "dry"

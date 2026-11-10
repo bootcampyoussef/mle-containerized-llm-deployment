@@ -17,6 +17,15 @@ app = FastAPI(title="Containerized LLM Service", version="1.0.0")
 service = GenerationService(build_provider(settings), settings)
 
 
+@app.get("/")
+def root() -> dict[str, str]:
+    """Confirm that the service is reachable and point to the real routes."""
+    return {
+        "message": "Containerized LLM service is running. "
+        "Use GET /health, GET /ready, or POST /generate."
+    }
+
+
 @app.get("/health")
 def health() -> dict[str, str]:
     """Confirm that the process and HTTP router are alive."""
